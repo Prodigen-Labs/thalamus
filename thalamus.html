@@ -1,0 +1,679 @@
+<!DOCTYPE html>
+<html lang="pt-PT">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Thalamus - Intelligent Intent Gateway</title>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link 
+href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Space+Grotesk:wght@400;500;700&family=Space+Mono&display=swap" 
+rel="stylesheet">
+    
+    <!-- Tailwind CSS (CDN para execução direta) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <style>
+        :root {
+            --color-primary: #E8E4DD;
+            --color-accent: #E63B2E;
+            --color-bg: #F5F3EE;
+            --color-dark: #111111;
+        }
+
+        body {
+            background-color: var(--color-bg);
+            color: var(--color-dark);
+            margin: 0;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .font-heading { font-family: 'Space Grotesk', sans-serif; }
+        .font-drama { font-family: 'DM Serif Display', serif; }
+        .font-data { font-family: 'Space Mono', monospace; }
+
+        /* Micro-Interações Obrigatórias */
+        .magnetic-btn {
+            position: relative;
+            overflow: hidden;
+            transition: transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94), 
+background-color 0.3s;
+        }
+        .magnetic-btn:hover {
+            transform: scale(1.03) translateY(-1px);
+        }
+        .magnetic-btn::before {
+            content: '';
+            position: absolute;
+            top: 0; left: -100%; width: 100%; height: 100%;
+            background: rgba(255,255,255,0.1);
+            transition: left 0.4s ease;
+        }
+        .magnetic-btn:hover::before {
+            left: 100%;
+        }
+
+        /* Animações Funcionais para os Cards */
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0; }
+        }
+        .animate-blink { animation: blink 1s step-end infinite; }
+
+        @keyframes scanline {
+            0% { top: 0; }
+            100% { top: 100%; }
+        }
+        .animate-scan { animation: scanline 3s linear infinite; }
+
+        @keyframes cursorPath {
+            0% { transform: translate(0px, 0px); opacity: 0; }
+            10% { opacity: 1; }
+            30% { transform: translate(60px, 40px); }
+            40% { transform: translate(60px, 40px) scale(0.9); } /* Click */
+            60% { transform: translate(120px, -20px); }
+            70% { transform: translate(120px, -20px) scale(0.9); } /* Click */
+            90% { opacity: 1; }
+            100% { transform: translate(180px, 60px); opacity: 0; }
+        }
+        .animate-cursor { animation: cursorPath 4s infinite cubic-bezier(0.4, 0, 0.2, 
+1); }
+
+        /* Scroll Hide para Nav */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: var(--color-bg); }
+        ::-webkit-scrollbar-thumb { background: var(--color-dark); border-radius: 
+4px; }
+
+        /* Classes para a animação FadeIn */
+        .reveal {
+            opacity: 0;
+            transition: opacity 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94), transform 
+0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        }
+        .reveal.up { transform: translateY(40px); }
+        .reveal.right { transform: translateX(-40px); }
+        .reveal.left { transform: translateX(40px); }
+        
+        .reveal.is-visible {
+            opacity: 1;
+            transform: translate(0, 0);
+        }
+    </style>
+</head>
+<body class="selection:bg-[#E63B2E] selection:text-[#F5F3EE]">
+
+    <!-- COMPONENTE DE RUÍDO GLOBAL (Textura Visual) -->
+    <svg class="pointer-events-none fixed inset-0 z-[100] h-full w-full 
+opacity-[0.05]" style="mix-blend-mode: multiply;">
+        <filter id="noise">
+            <feTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="4" 
+stitchTiles="stitch" />
+        </filter>
+        <rect width="100%" height="100%" filter="url(#noise)" />
+    </svg>
+
+    <!-- NAVBAR: "The Floating Island" -->
+    <nav id="navbar" class="fixed top-6 left-1/2 -translate-x-1/2 z-50 transition-all 
+duration-500 rounded-full px-6 py-3 flex items-center justify-between gap-12 
+bg-transparent text-[#E8E4DD]">
+        <div class="font-heading font-bold tracking-tight text-lg flex items-center 
+gap-2">
+            <i data-lucide="activity" id="nav-icon" style="width: 20px; height: 
+20px;" class="text-[#E8E4DD]"></i>
+            Thalamus
+        </div>
+        <div class="hidden md:flex gap-8 font-data text-xs uppercase 
+tracking-widest">
+            <a href="#arquitetura" class="hover:-translate-y-[1px] 
+transition-transform">Arquitetura</a>
+            <a href="#inferencia" class="hover:-translate-y-[1px] 
+transition-transform">Inferência</a>
+            <a href="#isolamento" class="hover:-translate-y-[1px] 
+transition-transform">Isolamento</a>
+        </div>
+        <button id="nav-btn" class="magnetic-btn px-5 py-2.5 rounded-full 
+font-heading text-xs uppercase tracking-wide font-bold bg-[#E63B2E] text-[#F5F3EE]">
+            Implementar
+        </button>
+    </nav>
+
+    <!-- HERO SECTION - The Opening Shot -->
+    <section class="relative min-h-[100dvh] w-full flex items-end pt-32 pb-24 
+md:pb-32 px-6 md:px-16 overflow-hidden bg-[#111111]">
+        <div class="absolute inset-0 z-0">
+            <img 
+                
+src="https://images.unsplash.com/photo-1518005020951-eccb494ad742?auto=format&fit=crop&q=80" 
+                alt="Brutalist Architecture" 
+                class="w-full h-full object-cover opacity-60 mix-blend-luminosity" 
+            />
+            <div class="absolute inset-0 bg-gradient-to-t from-[#111111] 
+via-[#111111]/80 to-transparent"></div>
+        </div>
+        
+        <div class="relative z-10 w-full max-w-6xl text-[#E8E4DD] flex flex-col 
+md:w-2/3">
+            <h1 class="flex flex-col gap-2">
+                <div class="reveal up">
+                    <span class="font-heading font-bold text-6xl md:text-8xl 
+lg:text-9xl uppercase tracking-tighter leading-none">Domine a</span>
+                </div>
+                <div class="reveal up" style="transition-delay: 150ms;">
+                    <span class="font-drama italic text-7xl md:text-9xl 
+lg:text-[10rem] text-[#E63B2E] leading-none pr-8">Arquitetura.</span>
+                </div>
+            </h1>
+            
+            <div class="reveal up" style="transition-delay: 300ms;">
+                <p class="mt-8 font-data text-sm md:text-base max-w-md 
+text-[#E8E4DD]/70 border-l border-[#E63B2E] pl-4">
+                    Prodigen Thalamus é o gateway de intenção inteligente. Roteamento 
+dinâmico entre modelos GPU locais e LLMs premium na nuvem com precisão absoluta.
+                </p>
+            </div>
+            
+            <div class="reveal up" style="transition-delay: 450ms;">
+                <button class="mt-10 bg-[#E8E4DD] text-[#111111] px-8 py-4 
+rounded-full font-heading text-sm font-bold uppercase tracking-wider magnetic-btn 
+flex items-center gap-3 w-fit">
+                    Explorar Framework <i data-lucide="arrow-right" style="width: 
+16px; height: 16px;"></i>
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <!-- FEATURES SECTION - Interactive Functional Artifacts -->
+    <section id="arquitetura" class="w-full py-32 px-6 md:px-16 bg-[#F5F3EE]">
+        <div class="max-w-7xl mx-auto">
+            <div class="reveal up">
+                <div class="font-data text-[#E63B2E] uppercase tracking-widest 
+text-xs mb-4 flex items-center gap-2">
+                    <i data-lucide="terminal" style="width: 14px; height: 14px;"></i> 
+Subsistemas Críticos
+                </div>
+                <h2 class="font-heading font-bold text-4xl md:text-5xl text-[#111111] 
+mb-16 max-w-2xl">
+                    Projetado para latência zero e densidade máxima.
+                </h2>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <!-- Feature 1 -->
+                <div class="reveal up flex flex-col gap-6" style="transition-delay: 
+100ms;">
+                    <!-- Shuffler Card -->
+                    <div class="relative h-[220px] w-full perspective-1000" 
+id="shuffler-container">
+                        <!-- Os cards serão injetados via JS -->
+                    </div>
+                    <div>
+                        <h3 class="font-heading font-bold text-xl mb-2 flex 
+items-center gap-2"><i data-lucide="zap" style="width: 18px; height: 18px;" 
+class="text-[#E63B2E]"></i> Roteamento Sub-10ms</h3>
+                        <p class="font-data text-[#111111]/60 text-sm 
+leading-relaxed">
+                            O Semantic Router classifica intenções instantaneamente 
+via kNN cosine similarity contra embeddings pré-computados, eliminando a espera por 
+gerações de LLM.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Feature 2 -->
+                <div class="reveal up flex flex-col gap-6" style="transition-delay: 
+200ms;">
+                    <!-- Typewriter Card -->
+                    <div class="h-[220px] w-full bg-[#111111] rounded-[2rem] p-6 
+text-[#E8E4DD] font-data text-xs overflow-hidden relative border border-[#2A2A35]">
+                        <div class="absolute top-6 right-6 flex items-center gap-2 
+z-10">
+                            <span class="w-2 h-2 rounded-full bg-[#E63B2E] 
+animate-pulse"></span>
+                            <span class="text-[#E63B2E] opacity-80 uppercase 
+tracking-widest text-[10px]">Live Feed</span>
+                        </div>
+                        <div class="absolute top-0 left-0 w-full h-full 
+bg-gradient-to-b from-transparent to-[#111111] pointer-events-none z-0"></div>
+                        <pre class="whitespace-pre-wrap leading-relaxed relative 
+z-10"><span id="typewriter-text"></span><span class="text-[#E63B2E] 
+animate-blink">_</span></pre>
+                    </div>
+                    <div>
+                        <h3 class="font-heading font-bold text-xl mb-2 flex 
+items-center gap-2"><i data-lucide="cpu" style="width: 18px; height: 18px;" 
+class="text-[#E63B2E]"></i> Inferência Local Otimizada</h3>
+                        <p class="font-data text-[#111111]/60 text-sm 
+leading-relaxed">
+                            vLLM assume o controle com PagedAttention, reduzindo o 
+desperdício de memória de 80% para menos de 4%, entregando throughput de nível de 
+produção.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Feature 3 -->
+                <div class="reveal up flex flex-col gap-6" style="transition-delay: 
+300ms;">
+                    <!-- Scheduler Card -->
+                    <div class="h-[220px] w-full bg-[#E8E4DD] rounded-[2rem] p-6 
+border border-[#111111]/10 relative overflow-hidden flex flex-col justify-between">
+                        <div class="text-[#E63B2E] text-[10px] uppercase 
+tracking-widest font-data mb-4">PostgreSQL RLS</div>
+                        
+                        <div class="grid grid-cols-6 gap-2 h-full relative" 
+id="scheduler-grid">
+                            <!-- JS injetará as células aqui -->
+                            
+                            <!-- Animated Cursor -->
+                            <div class="absolute top-0 left-0 w-4 h-4 text-[#111111] 
+animate-cursor z-10 drop-shadow-md">
+                                <svg viewBox="0 0 24 24" fill="currentColor" 
+stroke="white" stroke-width="1" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M3 3l7.07 16.97 2.51-7.39 7.39-2.51L3 
+3z" />
+                                </svg>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-4 flex items-center justify-between">
+                            <div class="font-heading font-bold text-[#111111] 
+text-sm">Isolamento de Tenant</div>
+                            <div class="font-data text-[#111111]/60 text-[10px] 
+bg-[#111111]/5 px-2 py-1 rounded">pgvector</div>
+                        </div>
+                    </div>
+                    <div>
+                        <h3 class="font-heading font-bold text-xl mb-2 flex 
+items-center gap-2"><i data-lucide="shield" style="width: 18px; height: 18px;" 
+class="text-[#E63B2E]"></i> Isolamento Multi-Tenant</h3>
+                        <p class="font-data text-[#111111]/60 text-sm 
+leading-relaxed">
+                            pgvector integrado com Row-Level Security (RLS) do 
+PostgreSQL garante que cada busca vetorial seja escopada ao tenant correto direto no 
+banco de dados.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- PHILOSOPHY SECTION - The Manifesto -->
+    <section class="relative w-full bg-[#111111] text-[#E8E4DD] py-40 px-6 md:px-16 
+overflow-hidden">
+        <div class="absolute inset-0 opacity-[0.15]">
+            <img 
+                
+src="https://images.unsplash.com/photo-1513694203232-719a280e022f?auto=format&fit=crop&q=80" 
+                alt="Raw Brutalist Texture" 
+                class="w-full h-full object-cover mix-blend-overlay" 
+                style="transform: scale(1.1);"
+            />
+        </div>
+        
+        <div class="relative z-10 max-w-6xl mx-auto flex flex-col gap-24">
+            <div class="reveal right">
+                <h2 class="font-heading text-3xl md:text-5xl text-[#E8E4DD]/40 
+max-w-4xl leading-tight">
+                    A maioria das infraestruturas foca em: dependência exclusiva e 
+custos crescentes de APIs na nuvem.
+                </h2>
+            </div>
+            
+            <div class="reveal left" style="transition-delay: 200ms;">
+                <h2 class="font-drama italic text-6xl md:text-8xl lg:text-9xl 
+max-w-5xl leading-tight text-right self-end ml-auto">
+                    Nós focamos em: <span class="text-[#E63B2E]">Soberania</span> e 
+Precisão Bruta.
+                </h2>
+            </div>
+        </div>
+    </section>
+
+    <!-- PROTOCOL SECTION - Sticky Stacking Archive -->
+    <section id="inferencia" class="w-full bg-[#111111] pb-32">
+        <div class="max-w-6xl mx-auto relative pt-20">
+            
+            <div class="sticky top-0 h-screen flex items-center justify-center p-6 
+md:p-8 z-10">
+                <div class="bg-[#E8E4DD] text-[#111111] rounded-[3rem] w-full 
+h-[75vh] md:h-[65vh] p-8 md:p-16 flex flex-col md:flex-row items-center 
+justify-between gap-12 shadow-2xl relative overflow-hidden group">
+                    <div class="absolute top-0 right-0 p-8 text-[#111111]/10 
+font-data text-9xl font-bold -z-10 group-hover:scale-110 transition-transform 
+duration-700">01</div>
+                    <div class="w-full md:w-1/2 flex flex-col gap-6">
+                        <div class="font-data text-[#E63B2E] bg-[#E63B2E]/10 px-4 
+py-2 rounded-full w-fit text-sm">Orquestração LangGraph</div>
+                        <h3 class="font-heading font-bold text-4xl md:text-6xl 
+uppercase leading-none">Agentes<br/>de Estado.</h3>
+                        <p class="font-data text-sm leading-relaxed max-w-md mt-4">
+                            O backbone de orquestração modela workflows de IA como 
+máquinas de estado agenticas usando primitivas de grafos. Rotas estruturadas definem 
+transições determinísticas com fallback gracioso.
+                        </p>
+                    </div>
+                    <div class="w-full md:w-1/2 h-full flex items-center 
+justify-center relative">
+                        <!-- Geometria Rotativa -->
+                        <div class="w-64 h-64 border border-[#111111]/20 rounded-full 
+flex items-center justify-center animate-[spin_20s_linear_infinite]">
+                            <div class="w-48 h-48 border border-[#111111]/40 
+rounded-full animate-[spin_15s_linear_infinite_reverse]"></div>
+                        </div>
+                        <div class="absolute inset-0 flex items-center 
+justify-center">
+                            <div class="w-32 h-32 bg-[#111111] rounded-full flex 
+items-center justify-center text-[#E8E4DD]">
+                                <i data-lucide="database" style="width: 40px; height: 
+40px;"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="sticky top-0 h-screen flex items-center justify-center p-6 
+md:p-8 z-20">
+                <div class="bg-[#1A1A1A] text-[#E8E4DD] rounded-[3rem] w-full 
+h-[75vh] md:h-[65vh] p-8 md:p-16 flex flex-col md:flex-row items-center 
+justify-between gap-12 shadow-[0_-20px_40px_rgba(0,0,0,0.5)] relative overflow-hidden 
+group">
+                    <div class="absolute top-0 right-0 p-8 text-[#E8E4DD]/5 font-data 
+text-9xl font-bold -z-10 group-hover:scale-110 transition-transform 
+duration-700">02</div>
+                    <div class="w-full md:w-1/2 flex flex-col gap-6">
+                        <div class="font-data text-[#E63B2E] bg-[#E63B2E]/10 px-4 
+py-2 rounded-full w-fit text-sm border border-[#E63B2E]/20">Recuperação Híbrida</div>
+                        <h3 class="font-heading font-bold text-4xl md:text-6xl 
+uppercase leading-none">RAG<br/>Dinâmico.</h3>
+                        <p class="font-data text-[#E8E4DD]/70 text-sm leading-relaxed 
+max-w-md mt-4">
+                            A arquitetura exige busca híbrida. Combinando vetores 
+densos com recuperação esparsa BM25 via Reciprocal Rank Fusion, melhoramos o recall 
+em até 30% antes do re-ranking cross-encoder.
+                        </p>
+                    </div>
+                    <div class="w-full md:w-1/2 h-full flex flex-col gap-4 
+justify-center items-center relative overflow-hidden">
+                        <!-- Grid Scanning -->
+                        <div class="w-full max-w-sm grid grid-cols-4 gap-2 relative" 
+id="scan-grid">
+                            <div class="absolute w-full h-1 bg-[#E63B2E] 
+shadow-[0_0_15px_#E63B2E] z-10 animate-scan pointer-events-none"></div>
+                            <!-- Células injetadas via JS -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="sticky top-0 h-screen flex items-center justify-center p-6 
+md:p-8 z-30">
+                <div class="bg-[#E63B2E] text-[#F5F3EE] rounded-[3rem] w-full 
+h-[75vh] md:h-[65vh] p-8 md:p-16 flex flex-col md:flex-row items-center 
+justify-between gap-12 shadow-[0_-20px_50px_rgba(0,0,0,0.6)] relative overflow-hidden 
+group">
+                    <div class="absolute top-0 right-0 p-8 text-[#F5F3EE]/20 
+font-data text-9xl font-bold -z-10 group-hover:scale-110 transition-transform 
+duration-700">03</div>
+                    <div class="w-full md:w-1/2 flex flex-col gap-6">
+                        <div class="font-data text-[#F5F3EE] bg-[#111111]/20 px-4 
+py-2 rounded-full w-fit text-sm font-bold">Autoscaling KServe</div>
+                        <h3 class="font-heading font-bold text-4xl md:text-6xl 
+uppercase leading-none">Scale to<br/>Zero.</h3>
+                        <p class="font-data text-[#F5F3EE]/90 text-sm leading-relaxed 
+max-w-md mt-4">
+                            KEDA monitora as métricas do vLLM e provisiona pods de 
+GPU apenas quando há demanda. Essa redução para zero transforma a economia do 
+multi-tenant, cortando tempo ocioso da GPU.
+                        </p>
+                    </div>
+                    <div class="w-full md:w-1/2 h-full flex items-center 
+justify-center">
+                        <!-- Waveform Pulse -->
+                        <div class="w-full flex items-center justify-center gap-2" 
+id="waveform">
+                            <!-- Barras injetadas via JS -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </section>
+
+    <!-- GET STARTED / CTA -->
+    <section class="w-full py-32 px-6 md:px-16 bg-[#F5F3EE] border-b 
+border-[#111111]/10">
+        <div class="max-w-4xl mx-auto text-center flex flex-col items-center">
+            <div class="reveal up flex flex-col items-center">
+                <i data-lucide="server" style="width: 48px; height: 48px;" 
+class="text-[#E63B2E] mb-8"></i>
+                <h2 class="font-heading font-bold text-5xl md:text-7xl text-[#111111] 
+uppercase tracking-tighter mb-8">
+                    Arquitetura Unificada. Pronta para Produção.
+                </h2>
+            </div>
+            <div class="reveal up" style="transition-delay: 150ms;">
+                <p class="font-data text-[#111111]/60 max-w-2xl mb-12">
+                    Inicie a implementação do gateway local hoje. Transfira a 
+qualidade do LLM em nuvem progressivamente para modelos locais mais baratos e domine 
+seus custos de IA.
+                </p>
+            </div>
+            <div class="reveal up" style="transition-delay: 300ms;">
+                <button class="bg-[#111111] text-[#E8E4DD] px-10 py-5 rounded-full 
+font-heading text-lg font-bold uppercase tracking-wider magnetic-btn flex 
+items-center gap-4">
+                    Acessar Repositório <i data-lucide="chevron-right" style="width: 
+20px; height: 20px;"></i>
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <!-- FOOTER -->
+    <footer class="w-full bg-[#111111] text-[#E8E4DD] rounded-t-[4rem] px-8 py-16 
+-mt-8 relative z-40">
+        <div class="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-12">
+            <div class="col-span-1 md:col-span-2 flex flex-col justify-between">
+                <div>
+                    <div class="font-heading font-bold text-2xl flex items-center 
+gap-2 mb-4">
+                        <i data-lucide="activity" style="width: 24px; height: 24px;" 
+class="text-[#E63B2E]"></i>
+                        Prodigen Thalamus
+                    </div>
+                    <p class="font-data text-xs text-[#E8E4DD]/50 max-w-xs">
+                        O gateway inteligente para roteamento entre modelos GPU 
+locais e LLMs premium na nuvem.
+                    </p>
+                </div>
+                
+                <div class="mt-12 flex items-center gap-3 bg-[#E8E4DD]/5 border 
+border-[#E8E4DD]/10 w-fit px-4 py-2 rounded-full">
+                    <span class="w-2 h-2 rounded-full bg-green-500 
+animate-pulse"></span>
+                    <span class="font-data text-[10px] uppercase tracking-widest 
+text-[#E8E4DD]/80">Sistema Operacional • v1.0.7</span>
+                </div>
+            </div>
+
+            <div class="flex flex-col gap-4 font-data text-xs">
+                <span class="text-[#E8E4DD]/40 mb-2 uppercase 
+tracking-widest">Documentação</span>
+                <a href="#" class="hover:text-[#E63B2E] transition-colors">LangGraph 
+Orchestration</a>
+                <a href="#" class="hover:text-[#E63B2E] transition-colors">vLLM 
+Inference</a>
+                <a href="#" class="hover:text-[#E63B2E] transition-colors">Semantic 
+Router</a>
+                <a href="#" class="hover:text-[#E63B2E] transition-colors">pgvector 
+RLS</a>
+            </div>
+
+            <div class="flex flex-col gap-4 font-data text-xs">
+                <span class="text-[#E8E4DD]/40 mb-2 uppercase 
+tracking-widest">Empresa</span>
+                <a href="#" class="hover:text-[#E63B2E] transition-colors">Licença 
+MIT</a>
+                <a href="#" class="hover:text-[#E63B2E] 
+transition-colors">Privacidade</a>
+                <a href="#" class="hover:text-[#E63B2E] transition-colors">Termos de 
+Serviço</a>
+                <a href="#" class="hover:text-[#E63B2E] transition-colors">Contato 
+Técnico</a>
+            </div>
+        </div>
+    </footer>
+
+    <!-- JAVASCRIPT LOGIC -->
+    <script>
+        // Iniciar ícones Lucide
+        lucide.createIcons();
+
+        // --- 1. Navbar Scroll Effect ---
+        const navbar = document.getElementById('navbar');
+        const navIcon = document.getElementById('nav-icon');
+        const navBtn = document.getElementById('nav-btn');
+
+        window.addEventListener('scroll', () => {
+            if (window.scrollY > 100) {
+                navbar.classList.remove('bg-transparent', 'text-[#E8E4DD]');
+                navbar.classList.add('bg-[#F5F3EE]/80', 'backdrop-blur-xl', 'border', 
+'border-[#111111]/10', 'text-[#111111]', 'shadow-sm');
+                navIcon.classList.replace('text-[#E8E4DD]', 'text-[#E63B2E]');
+                navBtn.classList.replace('bg-[#E63B2E]', 'bg-[#111111]');
+            } else {
+                navbar.classList.add('bg-transparent', 'text-[#E8E4DD]');
+                navbar.classList.remove('bg-[#F5F3EE]/80', 'backdrop-blur-xl', 
+'border', 'border-[#111111]/10', 'text-[#111111]', 'shadow-sm');
+                navIcon.classList.replace('text-[#E63B2E]', 'text-[#E8E4DD]');
+                navBtn.classList.replace('bg-[#111111]', 'bg-[#E63B2E]');
+            }
+        });
+
+        // --- 2. FadeIn Intersection Observer ---
+        const observerOptions = {
+            threshold: 0.1,
+            rootMargin: '0px 0px -50px 0px'
+        };
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('is-visible');
+                    observer.unobserve(entry.target);
+                }
+            });
+        }, observerOptions);
+
+        document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+
+        // --- 3. Shuffler Card Logic ---
+        const shufflerItems = [
+            { label: "Semantic Router", stat: "< 10ms", desc: "kNN Cosine Similarity" 
+},
+            { label: "DistilBERT", stat: "ONNX", desc: "INT8 Otimizado em CPU" },
+            { label: "LangGraph", stat: "Auto", desc: "Transição Condicional" }
+        ];
+        
+        const shufflerContainer = document.getElementById('shuffler-container');
+        
+        // Criar elementos no DOM
+        const cards = shufflerItems.map((item, i) => {
+            const card = document.createElement('div');
+            card.className = "absolute top-0 left-0 w-full p-6 bg-[#E8E4DD] border 
+border-[#111111]/10 rounded-[2rem] shadow-sm transition-all duration-1000 ease-in-out 
+flex flex-col justify-between h-full";
+            card.innerHTML = `
+                <div class="flex justify-between items-start">
+                    <div class="text-[#E63B2E] text-[10px] uppercase tracking-widest 
+font-data">Camada ${i+1}</div>
+                    <div class="font-data text-xs bg-[#111111]/5 px-2 py-1 
+rounded-md">${item.stat}</div>
+                </div>
+                <div>
+                    <div class="font-heading font-bold text-[#111111] text-xl 
+mb-1">${item.label}</div>
+                    <div class="font-data text-[#111111]/60 
+text-xs">${item.desc}</div>
+                </div>
+            `;
+            shufflerContainer.appendChild(card);
+            return card;
+        });
+
+        let order = [0, 1, 2];
+        const updateShuffler = () => {
+            cards.forEach((card, i) => {
+                const position = order.indexOf(i);
+                card.style.transform = `translateY(${position * 24}px) scale(${1 - 
+position * 0.04})`;
+                card.style.opacity = 1 - position * 0.3;
+                card.style.zIndex = 10 - position;
+            });
+        };
+        
+        updateShuffler(); // Initial setup
+        setInterval(() => {
+            order = [order[2], order[0], order[1]]; // Rotate array
+            updateShuffler();
+        }, 3000);
+
+        // --- 4. Typewriter Card Logic ---
+        const textToType = "> vLLM v0.16.0 iniciado...\n> Pipeline paralelo: Ativo\n> 
+PagedAttention: Ativo\n> Desperdício KV Cache: <4%\n> Quantização: FP8 dinâmico\n> 
+Throughput: 12,553 tok/s\n> Gateway: Pronto";
+        const typewriterEl = document.getElementById('typewriter-text');
+        let twIndex = 0;
+
+        setInterval(() => {
+            typewriterEl.textContent = textToType.substring(0, twIndex);
+            twIndex++;
+            if (twIndex > textToType.length + 10) twIndex = 0; // Restart after small 
+pause
+        }, 30);
+
+        // --- 5. Scheduler Card Grid ---
+        const schedulerGrid = document.getElementById('scheduler-grid');
+        for (let i = 0; i < 18; i++) {
+            const cell = document.createElement('div');
+            const isHighlight = i === 8 || i === 14;
+            cell.className = `rounded border border-[#111111]/10 ${isHighlight ? 
+'bg-[#E63B2E]/20 border-[#E63B2E]/50' : 'bg-[#111111]/5'} transition-colors 
+duration-500`;
+            // Inserir antes do cursor (que é o último filho manual)
+            schedulerGrid.insertBefore(cell, schedulerGrid.lastElementChild);
+        }
+
+        // --- 6. Scan Grid Protocol 02 ---
+        const scanGrid = document.getElementById('scan-grid');
+        for (let i = 0; i < 16; i++) {
+            const cell = document.createElement('div');
+            cell.className = "h-12 bg-[#E8E4DD]/5 rounded border 
+border-[#E8E4DD]/10";
+            scanGrid.appendChild(cell);
+        }
+
+        // --- 7. Waveform Protocol 03 ---
+        const waveHeights = [1, 2, 3, 4, 5, 4, 3, 2, 1];
+        const waveformContainer = document.getElementById('waveform');
+        waveHeights.forEach((h, i) => {
+            const bar = document.createElement('div');
+            bar.className = "w-4 bg-[#F5F3EE] rounded-full animate-pulse";
+            bar.style.height = `${h * 20}px`;
+            bar.style.animationDelay = `${i * 100}ms`;
+            waveformContainer.appendChild(bar);
+        });
+
+    </script>
+</body>
+</html>
